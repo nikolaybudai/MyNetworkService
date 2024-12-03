@@ -20,6 +20,7 @@ public extension NetworkClient {
         var urlComponents = URLComponents()
         urlComponents.scheme = endpoint.scheme
         urlComponents.host = endpoint.host
+        urlComponents.port = endpoint.port
         urlComponents.path = endpoint.path
         urlComponents.queryItems = endpoint.queryItems
         
