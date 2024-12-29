@@ -9,7 +9,7 @@ import Foundation
 
 public protocol NetworkClient {
     func sendRequest<T: Decodable>(endpoint: Endpoint, responseModel: T.Type) async -> Result<T, RequestError>
-    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, requestBody: U, responseModel: T.Type? = nil) async -> Result<T?, RequestError>
+    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, requestBody: U, responseModel: T.Type?) async -> Result<T?, RequestError>
 }
 
 @available(iOS 15.0, *)
