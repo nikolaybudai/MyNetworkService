@@ -9,7 +9,7 @@ import Foundation
 
 public protocol NetworkClient {
     func sendRequest<T: Decodable>(endpoint: Endpoint, responseModel: T.Type) async -> Result<T, RequestError>
-    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, postModel: U, responseModel: T.Type? = nil) async -> Result<T?, RequestError>
+    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, requestBody: U, responseModel: T.Type? = nil) async -> Result<T?, RequestError>
 }
 
 @available(iOS 15.0, *)
@@ -58,9 +58,10 @@ public extension NetworkClient {
         }
     }
     
-    func sendPostRequest<T: Decodable, U: Encodable>(
+    extension NetworkClient {
+        func sendPostRequest<T: Decodable, U: Encodable>(
             endpoint: Endpoint,
-            postModel: U,
+            requestBody: U,
             responseModel: T.Type? = nil
         ) async -> Result<T?, RequestError> {
             var urlComponents = URLComponents()
@@ -86,15 +87,22 @@ public extension NetworkClient {
 
             do {
                 let (data, response) = try await URLSession.shared.data(for: request, delegate: nil)
-                guard let response = response as? HTTPURLResponse else {
+                guard let httpResponse = response as? HTTPURLResponse else {
                     return .failure(.noResponse)
                 }
-                switch response.statusCode {
+
+                switch httpResponse.statusCode {
                 case 200...299:
-                    guard let decodedResponse = try? JSONDecoder().decode(responseModel, from: data) else {
-                        return .failure(.decoding)
+                    if let responseModel = responseModel {
+                        do {
+                            let decodedResponse = try JSONDecoder().decode(responseModel, from: data)
+                            return .success(decodedResponse)
+                        } catch {
+                            return .failure(.decoding)
+                        }
+                    } else {
+                        return .success(nil)
                     }
-                    return .success(decodedResponse)
                 case 401:
                     return .failure(.unauthorized)
                 default:
@@ -104,4 +112,5 @@ public extension NetworkClient {
                 return .failure(.unknown)
             }
         }
+    }
 }
