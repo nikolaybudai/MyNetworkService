@@ -9,7 +9,7 @@ import Foundation
 
 public protocol NetworkClient {
     func sendRequest<T: Decodable>(endpoint: Endpoint, responseModel: T.Type) async -> Result<T, RequestError>
-    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, requestBody: U, responseModel: T.Type?) async -> Result<T?, RequestError>
+    func sendPostRequest<T: Decodable, U: Encodable>(endpoint: Endpoint, requestBody: U, responseModel: T.Type) async -> Result<T, RequestError>
 }
 
 @available(iOS 15.0, *)
@@ -61,8 +61,8 @@ public extension NetworkClient {
     func sendPostRequest<T: Decodable, U: Encodable>(
         endpoint: Endpoint,
         requestBody: U,
-        responseModel: T.Type? = nil
-    ) async -> Result<T?, RequestError> {
+        responseModel: T.Type
+    ) async -> Result<T, RequestError> {
         var urlComponents = URLComponents()
         urlComponents.scheme = endpoint.scheme
         urlComponents.host = endpoint.host
@@ -92,15 +92,11 @@ public extension NetworkClient {
 
             switch httpResponse.statusCode {
             case 200...299:
-                if let responseModel = responseModel {
-                    do {
-                        let decodedResponse = try JSONDecoder().decode(responseModel, from: data)
-                        return .success(decodedResponse)
-                    } catch {
-                        return .failure(.decoding)
-                    }
-                } else {
-                    return .success(nil)
+                do {
+                    let decodedResponse = try JSONDecoder().decode(responseModel, from: data)
+                    return .success(decodedResponse)
+                } catch {
+                    return .failure(.decoding)
                 }
             case 401:
                 return .failure(.unauthorized)
